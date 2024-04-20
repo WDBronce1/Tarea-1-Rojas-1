@@ -50,12 +50,11 @@ void registrar_paciente(List *lista_pacientes, Filas *fila)
   printf("Ingrese los sintomas del paciente: ");
   fgets(paciente->persona.sintomas, sizeof(paciente->persona.sintomas), stdin);
   printf("\n");
-  printf("Ingrese la hora de llegada del paciente: ");
+  printf("Ingrese la hora de registro del paciente: ");
   scanf("%d", &paciente->HoraLlegada);
   printf("\n");
-  strcpy(paciente->Prioridad,"Baja");
+  paciente->Prioridad = 3;
   list_pushBack(lista_pacientes, paciente);
-  list_pushBack(fila->FilaBaja, paciente);
 }
 
 
@@ -64,115 +63,105 @@ void registrar_paciente(List *lista_pacientes, Filas *fila)
 
 void asignar_prioridad(List *lista_pacientes, Filas *fila)
 {
-  char PacienteBuscado[60];
-  char NuevaPrioridad[30];
-  Paciente* PacienteActual = malloc(sizeof(Paciente));
-  PacienteActual = list_first(lista_pacientes);
-  printf("Ingrese el nombre del paciente a buscar: ");
-  getchar();
-  fgets(PacienteBuscado, sizeof(PacienteBuscado), stdin);
-  while(strcmp(PacienteActual->persona.nombre,PacienteBuscado) != 0 && PacienteActual != NULL)
-    {
-      PacienteActual = list_next(lista_pacientes);
-    }
-  if(PacienteActual == NULL)
-  {
-    printf("El paciente no existe\n");
-  }
-  else
-  {
-    list_popCurrent(fila->FilaMedia);
-    list_popCurrent(fila->FilaAlta);
-    
-    printf("Ingrese la prioridad a asignar (Alta | Media | Baja)\n");
+    char PacienteBuscado[60];
+    int NuevaPrioridad = 0;
+    Paciente *PacienteActual = list_first(lista_pacientes);
+    printf("Ingrese el nombre del paciente a buscar: ");
     getchar();
-    fgets(NuevaPrioridad, sizeof(NuevaPrioridad), stdin);
-    
-    strcpy(PacienteActual->Prioridad, NuevaPrioridad);
-  }
-  
-  
+    fgets(PacienteBuscado, sizeof(PacienteBuscado), stdin);
+
+    while (PacienteActual != NULL)
+    {
+        if (strcmp(PacienteActual->persona.nombre, PacienteBuscado) == 0)
+        {
+            break;  // Si se encuentra el paciente, salir del bucle
+        }
+        PacienteActual = list_next(lista_pacientes);
+    }
+
+    if (PacienteActual == NULL)
+    {
+        printf("El paciente no existe\n");
+        return;
+    }
+
+    switch (PacienteActual->Prioridad)
+    {
+    case 1:
+        list_popCurrent(fila->FilaAlta);
+        break;
+    case 2:
+        list_popCurrent(fila->FilaMedia);
+        break;
+    case 3:
+        list_popCurrent(fila->FilaBaja);
+        break;
+    }
+
+    while (NuevaPrioridad < 1 || NuevaPrioridad > 3)
+    {
+        printf("Ingrese la prioridad a asignar (Alta 1| Media 2| Baja 3): ");
+        scanf("%d", &NuevaPrioridad);
+        getchar();
+    }
+
+    switch (NuevaPrioridad)
+    {
+    case 1:
+        list_pushBack(fila->FilaAlta, PacienteActual);
+        break;
+    case 2:
+        list_pushBack(fila->FilaMedia, PacienteActual);
+        break;
+    case 3:
+        list_pushBack(fila->FilaBaja, PacienteActual);
+        break;
+    }
+
+    PacienteActual->Prioridad = NuevaPrioridad;
+
+    printf("Prioridad actualizada con éxito\n");
 }
 
 
 //Mostrar lista de espera ####################################################
 // La aplicación muestra por pantalla la lista de pacientes en espera, ordenada por nivel de prioridad (de "Alto" a "Bajo") y, dentro del mismo nivel, por orden de llegada (hora de registro).
-void mostrar_lista_pacientes(List *lista_pacientes, Filas *fila, int pacientes) 
+void mostrar_lista_pacientes(List *lista_pacientes, Filas *fila, int pacientes)
 {
-  Paciente* PacienteActual = malloc(sizeof(Paciente));
-  // Mostrar pacientes en la cola de espera
+  // Mostrar la cantidad total de pacientes en espera
   printf("Pacientes en espera: %d\n", pacientes);
-  // Aquí implementarías la lógica para recorrer y mostrar los pacientes
-  
-  PacienteActual = list_first(fila->FilaAlta);
+
+  // Recorrer cada fila y mostrar los pacientes en espera
+  List *filas[] = {fila->FilaAlta, fila->FilaMedia, fila->FilaBaja};
+  char *prioridades[] = {"Alta", "Media", "Baja"};
+
+  for (int i = 0; i < 3; ++i)
+  {
+    printf("Prioridad: %s-----------------\n", prioridades[i]);
+    printf("\n");
+    Paciente *PacienteActual = list_first(filas[i]);
+    while (PacienteActual != NULL)
+    {
+      printf("Nombre: %s\n", PacienteActual->persona.nombre);
+      printf("    Hora de llegada: %d\n", PacienteActual->HoraLlegada);
+      printf("\n");
+      PacienteActual = list_next(filas[i]);
+    }
+  }
+
+  printf("Lista de pacientes que no an sido asignados a ninguna fila:\n");
+  Paciente *PacienteActual = list_first(lista_pacientes);
   while (PacienteActual != NULL)
     {
       printf("Nombre: %s\n", PacienteActual->persona.nombre);
-      printf("                         Hora de llegada : %d", PacienteActual->HoraLlegada);
+      printf("    Hora de llegada: %d\n", PacienteActual->HoraLlegada);
       printf("\n");
-      PacienteActual = list_next(fila->FilaAlta);
+      PacienteActual = list_next(lista_pacientes);
     }
-  
-  PacienteActual = list_first(fila->FilaMedia);
-  while (PacienteActual != NULL)
-  {
-    printf("Nombre: %s\n", PacienteActual->persona.nombre);
-    printf("                         Hora de llegada : %d", PacienteActual->HoraLlegada);
-    printf("\n");
-    PacienteActual = list_next(fila->FilaMedia);
-  }
-  
-  PacienteActual = list_first(fila->FilaBaja);
-  while (PacienteActual != NULL)
-  {
-    printf("Nombre: %s\n", PacienteActual->persona.nombre);
-    printf("                         Hora de llegada : %d", PacienteActual->HoraLlegada);
-    printf("\n");
-    PacienteActual = list_next(fila->FilaBaja);
-  }
-  
 }
+
 //Atender al siguiente paciente ##############################################
 //La aplicación selecciona al siguiente paciente a ser atendido según el orden de prioridad y lo elimina de la lista de espera. Muestra los datos del paciente atendido. Si no hay pacientes en espera, se muestra un aviso.
-/*
-void atender_paciente(List *lista_pacientes, Filas *fila)
-{
-  Paciente *PacienteActual = malloc(sizeof(Paciente));
-  Paciente *Auxiliar = malloc(sizeof(Paciente));
-  if (list_first(fila->FilaAlta) != NULL)
-  {
-    PacienteActual = list_first(fila->FilaAlta);
-    Auxiliar = PacienteActual;
-    list_popFront(fila->FilaAlta);
-  }
-  else 
-    if (list_first(fila->FilaMedia) != NULL)
-    {
-      PacienteActual = list_first(fila->FilaMedia);
-      Auxiliar = PacienteActual;
-      list_popFront(fila->FilaMedia);
-    }
-  else 
-    if (list_first(fila->FilaBaja) != NULL)
-    {
-      PacienteActual = list_first(fila->FilaBaja);
-      Auxiliar = PacienteActual;
-      list_popFront(fila->FilaBaja);
-    }
-   else
-  {
-    printf("NO HAY LISTA DE ESPERA\n");
-    return;
-  }
-  printf("Datos del Paciente atendido:\n");
-  printf("Nombre: %s\n", Auxiliar->persona.nombre);
-  printf("Edad: %d\n", Auxiliar->persona.edad);
-  printf("Sintomas: %s\n", Auxiliar->persona.sintomas);
-  printf("Hora de llegada: %d\n", Auxiliar->HoraLlegada);
-  printf("Prioridad: %s\n", Auxiliar->Prioridad);
-  list_popCurrent(lista_pacientes);
-}
-*/
 void atender_paciente(List *lista_pacientes, Filas *fila)
 {
   Paciente *PacienteActual = NULL;
@@ -205,8 +194,22 @@ void atender_paciente(List *lista_pacientes, Filas *fila)
   printf("Edad: %d\n", Auxiliar->persona.edad);
   printf("Sintomas: %s\n", Auxiliar->persona.sintomas);
   printf("Hora de llegada: %d\n", Auxiliar->HoraLlegada);
-  printf("Prioridad: %s\n", Auxiliar->Prioridad);
-
+  if(Auxiliar->Prioridad == 1)
+  {
+    printf("Prioridad: Alta\n");
+  }
+  else
+  {
+    if(Auxiliar->Prioridad == 2)
+    {
+      printf("Prioridad: Media\n");
+    }
+    else
+    {
+      printf("Prioridad: Baja\n");
+    }
+  }
+  
   list_popCurrent(lista_pacientes);
 }
 //Mostrar pacientes por prioridad ############################################
@@ -214,11 +217,15 @@ void atender_paciente(List *lista_pacientes, Filas *fila)
 void mostrar_pacientes_por_prioridad(List *lista_pacientes, Filas *fila)
 {
   Paciente *PacienteActual = malloc(sizeof(Paciente));
-  char PrioridadBuscada[30];
-  printf("Ingrese la prioridad: ");
-  scanf("%s", PrioridadBuscada);
+  int PrioridadBuscada;
+  while (PrioridadBuscada < 1 || PrioridadBuscada > 3)
+  {
+      printf("Ingrese la prioridad a buscar (Alta 1| Media 2| Baja 3): ");
+      scanf("%d", &PrioridadBuscada);
+      getchar();
+  }
 
-  if(strcasecmp(PrioridadBuscada, "Alta") == 0)
+  if(PrioridadBuscada == 1)
   {
     PacienteActual = list_first(fila->FilaAlta);
     while(PacienteActual != NULL)
@@ -229,7 +236,7 @@ void mostrar_pacientes_por_prioridad(List *lista_pacientes, Filas *fila)
       PacienteActual = list_next(fila->FilaAlta);
     }
   }
-  else if(strcasecmp(PrioridadBuscada, "Media") == 0)
+  else if(PrioridadBuscada== 2)
   {
     PacienteActual = list_first(fila->FilaMedia);
     while(PacienteActual != NULL)
@@ -240,7 +247,7 @@ void mostrar_pacientes_por_prioridad(List *lista_pacientes, Filas *fila)
       PacienteActual = list_next(fila->FilaMedia);
     }
   }
-  else if(strcasecmp(PrioridadBuscada, "Baja") == 0)
+  else if(PrioridadBuscada == 3)
   {
     PacienteActual = list_first(fila->FilaBaja);
     while(PacienteActual != NULL)
